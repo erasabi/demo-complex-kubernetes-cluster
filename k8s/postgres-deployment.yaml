@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: postgres
+  template:
+    metadata:
+      labels:
+        component: postgres
+    spec:
+      # volumes: specifies all the volumes needed for each instance of this pod
+      volumes:
+        # specifies a PVC object, pointing to its config.yaml by name
+        - name: postgres-storage
+          # persistentVolumeClaim: a claim which requests k8 to find storage on pod creation
+            # - specifies accessMode, storage size, etc...
+            # - not an actual volume but a claim to one
+            # - its up to k8 to find storage based on claim
+          persistentVolumeClaim:
+            claimName: database-persistent-volume-claim
+      containers:
+        - name: postgres
+          image: postgres
+          env:
+            # SECRET ENV VAR
+              # - specify custom POSTGRES PASSWORD here to overwrite default password for username 'postgres'
+              # - if not password would be default password
+            #   - created with cmd: kubectl create secret generic pgpassword --from-literal PGPASSWORD=somepass12
+            #
+            # IMPORTANT
+            # Due to a recent change in the official Postgres image hosted on the DockerHub:
+            #   - the name given for postgres user password must be 'POSTGRES_PASSWORD'
+            #   - k8 secret name, key, and value can still be anything
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pgpassword
+                  key: PGPASSWORD
+          ports:
+            - containerPort: 5432 # default postgres port
+          # volumeMounts: describes how to access storage within container
+          volumeMounts:
+            # references the volume defined above to be used
+            - name: postgres-storage
+              # mountPath: where in container storage should be mounted
+                # why /var/lib/postgresql/data?
+                #   - we want to backup the data stored by the postgres db
+                #   - the default storage location for postgres is this one
+              mountPath: /var/lib/postgresql/data
+              # subPath: 
+              #   - data from mountPath with be backed up to PVC
+              #   - subPath specifies the name of the PVC folder holding that data
+              #   - specific to postgres and needed to prevent error
+              subPath: postgres

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: database-persistent-volume-claim
+spec:
+  # accessModes: defines the mode of access you will need in a PVC
+  #   - 3 types of accessModes:
+  #     1 ReadWriteOnce: allows read/write by single node
+  #     2 ReadOnlyMany: allows only read by many nodes
+  #     3 ReadWriteMany: allows read/write by many nodes
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      # storage: defines the amount for storage space k8 will have to already have or find
+      storage: 2Gi

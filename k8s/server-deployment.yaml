@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      component: server
+  template:
+    metadata:
+      labels:
+        component: server
+    spec:
+      containers:
+        - name: server
+          # image: cygnetops/multi-server-pgfix-5-11
+          image: stephengrider/multi-server
+          ports:
+            - containerPort: 5000 # listening port hardcoded in app code
+          env:
+            # STATIC VALUES (MAPPED using k8 service name)
+            - name: REDIS_HOST
+            # redis-cluster-ip-service: the name of the redis cluster ip
+              value: redis-cluster-ip-service
+              # - defined in redis-cluster-ip-service.yaml
+            - name: PGHOST
+            # postgres-cluster-ip-service: the name of the postgres cluster ip
+              # - defined in postgres-cluster-ip-service.yaml
+              value: postgres-cluster-ip-service
+            # STATIC VALUES (HARDCODED)
+            - name: REDIS_PORT
+              value: '6379' # default redis port
+            - name: PGUSER
+              value: postgres # default postgres user
+            - name: PGPORT
+              value: '5432' # default postgres 
+            - name: PGDATABASE
+              value: postgres # default postgres db
+            # SENSITIVE DYNAMIC VALUE (Stored as k8 Secret)
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pgpassword
+                  key: PGPASSWORD

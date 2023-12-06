@@ -1,0 +1,49 @@
+# networking.k8s.io/v1beta1: updated api version
+  # - add a capture group and annotations which will resolves the error:
+  # - TypeError: this.state.seenIndexes.map is not a function
+apiVersion: networking.k8s.io/v1beta1
+# kind: type of k8 object you are creating
+#   types: 
+      # - pod: used to run a containerPort
+      # - service: set up networking config
+      # - statefulSet
+      # - replicaContoller 
+# Ingress: Networking object used to expose pods to the outside world
+  # - ingress setup will changes slightly depending on deploy env(local,GCP,AWS, etc)
+  # - use instead of K8 Load Balancer(legacy Ingress)
+  #  ** K8 Load Balancer not to be confused with GCP Load Balancer which is not legacy 
+  # - ingress types:
+  #   - ingress-nginx: community-led nginx project
+  #   - kubernetes-ingress: nginx-led nginx project
+kind: Ingress
+metadata:
+  name: ingress-service
+  # annotations: additional configuration options 
+  #   - specify higher lvl config of ingress object
+  annotations:
+    # kubernetes.io/ingress.class: tells k8 to create ingress controller from this nginx project 
+    kubernetes.io/ingress.class: 'nginx'
+    # nginx.ingress.kubernetes.io/use-regex:
+    #   - fixes 404 errors both locally and on Google Cloud
+    #   - caused by change in how ingress-nginx handles regexes
+    nginx.ingress.kubernetes.io/use-regex: 'true'
+    # nginx.ingress.kubernetes.io/rewrite-target: configs how nginx copy actually behaves
+      # - removes '/api' from request path before routing to server 
+      # - $1: is the first path argument  
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+spec:
+  rules:
+    - http:
+        paths:
+          # any path patially matching '/' route to client
+          - path: /?(.*)
+            backend:
+              # client-cluster-ip-service: the name of the client cluster ip
+              serviceName: client-cluster-ip-service
+              servicePort: 3000
+          # any path patially matching '/api/' route to server
+          - path: /api/?(.*)
+            backend:
+              # server-cluster-ip-service: the name of the server cluster ip
+              serviceName: server-cluster-ip-service
+              servicePort: 5000
